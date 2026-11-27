@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dab Automotive - Store Manager & Inventory Dashboard (UC-35)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-100 text-slate-800">
+  <!-- Top Bar -->
+  <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-indigo-600 p-2 rounded-lg text-white">
+          <i class="fa-solid fa-boxes-stacked text-xl"></i>
+        </div>
+        <div>
+          <span class="text-lg font-bold">DAB AUTOMOTIVE &bull; INVENTORY CONTROL</span>
+          <span class="text-xs text-slate-400 block">Member 4: Roman Fatima (241878) - UC-21, 22, 23, 24, 35</span>
+        </div>
+      </div>
+      <div class="flex items-center space-x-4">
+        <a href="/index.html" class="text-xs bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+          <i class="fa-solid fa-store"></i> Customer E-Commerce Storefront
+        </a>
+        <div class="text-xs bg-indigo-950 border border-indigo-800 px-3 py-1.5 rounded-lg text-indigo-200">
+          <i class="fa-solid fa-user-shield text-indigo-400"></i> Store Manager Active
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <!-- Key Metric Counters (UC-35) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <span class="text-xs font-semibold text-slate-500 uppercase">Active Parts SKU</span>
+        <div class="text-2xl font-black text-slate-900 mt-1" id="metric-parts">0</div>
+        <span class="text-[11px] text-slate-400">Total catalog parts</span>
+      </div>
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <span class="text-xs font-semibold text-slate-500 uppercase">Workshop Stock</span>
+        <div class="text-2xl font-black text-indigo-600 mt-1" id="metric-workshop">0</div>
+        <span class="text-[11px] text-slate-400">Reserved for mechanics</span>
+      </div>
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <span class="text-xs font-semibold text-slate-500 uppercase">Web Available</span>
+        <div class="text-2xl font-black text-emerald-600 mt-1" id="metric-web">0</div>
+        <span class="text-[11px] text-slate-400">For online store orders</span>
+      </div>
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <span class="text-xs font-semibold text-slate-500 uppercase">Pending Requisitions</span>
+        <div class="text-2xl font-black text-amber-500 mt-1" id="metric-reqs">0</div>
+        <span class="text-[11px] text-amber-600 font-medium">Awaiting approval</span>
+      </div>
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-rose-500">
+        <span class="text-xs font-semibold text-rose-600 uppercase">Low Stock Alerts</span>
+        <div class="text-2xl font-black text-rose-600 mt-1" id="metric-low-stock">0</div>
+        <span class="text-[11px] text-slate-400">Under threshold</span>
+      </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="border-b border-slate-300 flex space-x-6">
+      <button onclick="switchTab('inventory')" id="tab-btn-inventory" class="py-2.5 font-bold text-sm border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-2">
+        <i class="fa-solid fa-boxes-stacked"></i> Stock Management (UC-21)
+      </button>
+      <button onclick="switchTab('requisitions')" id="tab-btn-requisitions" class="py-2.5 font-medium text-sm text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2">
+        <i class="fa-solid fa-clipboard-check"></i> Parts Requisitions (UC-22)
+      </button>
+      <button onclick="switchTab('orders')" id="tab-btn-orders" class="py-2.5 font-medium text-sm text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2">
+        <i class="fa-solid fa-truck-ramp-box"></i> Web Orders Fulfilment (UC-24)
+      </button>
+      <button onclick="switchTab('transactions')" id="tab-btn-transactions" class="py-2.5 font-medium text-sm text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2">
+        <i class="fa-solid fa-timeline"></i> Stock Ledger / Audit (UC-21)
+      </button>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 1: INVENTORY & STOCK MANAGEMENT        -->
+    <!-- ========================================== -->
+    <div id="tab-inventory" class="space-y-4">
+      <div class="bg-white p-4 rounded-xl border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <input type="text" id="inv-search" placeholder="Search by name, SKU..." onkeyup="loadInventory()" class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-64" />
+          <label class="flex items-center gap-1.5 text-xs font-semibold text-slate-700 cursor-pointer">
+            <input type="checkbox" id="inv-low-stock-check" onchange="loadInventory()" class="rounded text-indigo-600">
+            Show Low Stock Only
+          </label>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="openAdjustModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-arrows-split-up-and-left"></i> Restock / Allocate Stock
+          </button>
+          <button onclick="openCreatePartModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-plus"></i> Add New Part
+          </button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-600 uppercase font-bold border-b border-slate-200">
+              <tr>
+                <th class="p-3">SKU</th>
+                <th class="p-3">Part Name</th>
+                <th class="p-3">Cost / Unit Price</th>
+                <th class="p-3 text-center">Workshop Qty</th>
+                <th class="p-3 text-center">Web Qty</th>
+                <th class="p-3 text-center">Reserved</th>
+                <th class="p-3 text-center">Threshold</th>
+                <th class="p-3 text-center">Status</th>
+                <th class="p-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="inventory-table-body" class="divide-y divide-slate-100">
+              <!-- Loaded via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: PARTS REQUISITIONS (UC-22 / SEQ-05) -->
+    <!-- ========================================== -->
+    <div id="tab-requisitions" class="hidden space-y-4">
+      <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-center justify-between text-xs text-amber-900">
+        <div>
+          <span class="font-bold text-sm block text-amber-950">Mechanic Parts Requisitions (SEQ-05 / AD-07)</span>
+          Review parts submitted against workshop Job Cards. Approving automatically deducts workshop stock in an ACID database transaction.
+        </div>
+        <button onclick="openSimulateRequisitionModal()" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg font-bold">
+          <i class="fa-solid fa-wrench"></i> Simulate Mechanic Requisition
+        </button>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-600 uppercase font-bold border-b border-slate-200">
+              <tr>
+                <th class="p-3">Req #</th>
+                <th class="p-3">Job Card</th>
+                <th class="p-3">Mechanic</th>
+                <th class="p-3">Requested Items</th>
+                <th class="p-3">Date</th>
+                <th class="p-3 text-center">Status</th>
+                <th class="p-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="requisitions-table-body" class="divide-y divide-slate-100">
+              <!-- Loaded via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: WEB ORDERS FULFILMENT (UC-24)       -->
+    <!-- ========================================== -->
+    <div id="tab-orders" class="hidden space-y-4">
+      <div class="bg-indigo-50 border border-indigo-200 p-4 rounded-xl text-xs text-indigo-900 flex justify-between items-center">
+        <div>
+          <span class="font-bold text-sm block text-indigo-950">E-Commerce Fulfilment Lifecycle (US-28 / AD-05)</span>
+          State transitions: <strong>Placed &rarr; Packed &rarr; Dispatched &rarr; Delivered</strong>. Dispatched converts reserved stock into permanent sales.
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-600 uppercase font-bold border-b border-slate-200">
+              <tr>
+                <th class="p-3">Order Number</th>
+                <th class="p-3">Customer</th>
+                <th class="p-3">Items Purchased</th>
+                <th class="p-3">Total Amount</th>
+                <th class="p-3">Payment</th>
+                <th class="p-3 text-center">Status</th>
+                <th class="p-3 text-right">Fulfilment Action</th>
+              </tr>
+            </thead>
+            <tbody id="orders-table-body" class="divide-y divide-slate-100">
+              <!-- Loaded via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 4: TRANSACTION LEDGER (UC-21)          -->
+    <!-- ========================================== -->
+    <div id="tab-transactions" class="hidden space-y-4">
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+        <div class="p-4 border-b border-slate-200 font-bold text-xs uppercase text-slate-600">
+          Complete Inventory Audit Ledger (Purchase, Allocation, Reserve, Issue, Sale, Adjustment)
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs font-mono">
+            <thead class="bg-slate-50 text-slate-600 uppercase border-b border-slate-200">
+              <tr>
+                <th class="p-3 font-sans">Tx ID</th>
+                <th class="p-3 font-sans">Part SKU / Name</th>
+                <th class="p-3 font-sans">Type</th>
+                <th class="p-3 font-sans text-center">Qty</th>
+                <th class="p-3 font-sans">Flow (Source &rarr; Dest)</th>
+                <th class="p-3 font-sans">Ref Type / Note</th>
+                <th class="p-3 font-sans">Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="transactions-table-body" class="divide-y divide-slate-100">
+              <!-- Loaded via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Stock Adjustment Modal -->
+  <div id="adjust-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeAdjustModal()"></div>
+    <div class="relative bg-white rounded-xl max-w-md w-full p-6 shadow-2xl z-10 space-y-4">
+      <h3 class="font-bold text-slate-900 text-base">Restock or Allocate Stock</h3>
+      <form onsubmit="handleAdjustStock(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold mb-1">Select Part</label>
+          <select id="adj-part-id" required class="w-full border rounded-lg p-2"></select>
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">Action Type</label>
+          <select id="adj-type" onchange="updateAdjustFields()" class="w-full border rounded-lg p-2">
+            <option value="Purchase">Purchase (Receive from Supplier)</option>
+            <option value="Allocation">Allocation (Transfer Workshop &harr; Web)</option>
+            <option value="Adjustment">Direct Adjustment (Stock Count Correction)</option>
+          </select>
+        </div>
+        <div id="div-source" class="hidden">
+          <label class="block font-semibold mb-1">Source Pool</label>
+          <select id="adj-source" class="w-full border rounded-lg p-2">
+            <option value="workshop">Workshop Stock</option>
+            <option value="web">Web Stock</option>
+          </select>
+        </div>
+        <div id="div-dest">
+          <label class="block font-semibold mb-1">Destination Pool</label>
+          <select id="adj-dest" class="w-full border rounded-lg p-2">
+            <option value="workshop">Workshop Stock</option>
+            <option value="web">Web Stock</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">Quantity</label>
+          <input type="number" id="adj-qty" min="1" required class="w-full border rounded-lg p-2" placeholder="e.g. 10">
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">Notes / Supplier Invoice Ref</label>
+          <input type="text" id="adj-notes" class="w-full border rounded-lg p-2" placeholder="e.g. Restock PO-9921">
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button type="button" onclick="closeAdjustModal()" class="w-1/2 bg-slate-200 py-2 rounded-lg font-medium">Cancel</button>
+          <button type="submit" class="w-1/2 bg-indigo-600 text-white py-2 rounded-lg font-bold">Apply Adjustment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Create Part Modal -->
+  <div id="create-part-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeCreatePartModal()"></div>
+    <div class="relative bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl z-10 space-y-4 max-h-[90vh] overflow-y-auto">
+      <h3 class="font-bold text-slate-900 text-base">Add New Part & Store Product (UC-23)</h3>
+      <form onsubmit="handleCreatePart(event)" class="space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold mb-1">SKU *</label>
+            <input type="text" id="cp-sku" required class="w-full border rounded-lg p-2" placeholder="e.g. FLT-AIR-01">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Part Name *</label>
+            <input type="text" id="cp-name" required class="w-full border rounded-lg p-2" placeholder="e.g. Bosch Air Filter">
+          </div>
+        </div>
+        <div>
+          <label class="block font-semibold mb-1">Description</label>
+          <textarea id="cp-desc" class="w-full border rounded-lg p-2" rows="2"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold mb-1">Unit Cost (Rs.)</label>
+            <input type="number" id="cp-cost" required class="w-full border rounded-lg p-2" placeholder="1200">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Selling Price (Rs.)</label>
+            <input type="number" id="cp-price" required class="w-full border rounded-lg p-2" placeholder="1800">
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block font-semibold mb-1">Workshop Qty</label>
+            <input type="number" id="cp-wqty" value="5" class="w-full border rounded-lg p-2">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Web Qty</label>
+            <input type="number" id="cp-webqty" value="10" class="w-full border rounded-lg p-2">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1">Threshold</label>
+            <input type="number" id="cp-thresh" value="4" class="w-full border rounded-lg p-2">
+          </div>
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button type="button" onclick="closeCreatePartModal()" class="w-1/2 bg-slate-200 py-2 rounded-lg font-medium">Cancel</button>
+          <button type="submit" class="w-1/2 bg-emerald-600 text-white py-2 rounded-lg font-bold">Save Part</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let partsCache = [];
+
+    window.addEventListener('DOMContentLoaded', () => {
+      refreshAll();
+    });
+
+    function refreshAll() {
+      loadMetrics();
+      loadInventory();
+      loadRequisitions();
+      loadOrders();
+      loadTransactions();
+    }
+
+    function switchTab(tab) {
+      ['inventory', 'requisitions', 'orders', 'transactions'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.add('hidden');
+        document.getElementById(`tab-btn-${t}`).className = 'py-2.5 font-medium text-sm text-slate-600 hover:text-slate-900 border-b-2 border-transparent flex items-center gap-2';
+      });
+      document.getElementById(`tab-${tab}`).classList.remove('hidden');
+      document.getElementById(`tab-btn-${tab}`).className = 'py-2.5 font-bold text-sm border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-2';
+    }
+
+    async function loadMetrics() {
+      try {
+        const res = await fetch('/api/dashboard/inventory');
+        const json = await res.json();
+        if (json.success) {
+          const m = json.data;
+          document.getElementById('metric-parts').textContent = m.totalParts;
+          document.getElementById('metric-workshop').textContent = m.totalWorkshopStock;
+          document.getElementById('metric-web').textContent = m.totalWebStock;
+          document.getElementById('metric-reqs').textContent = m.pendingRequisitions;
+          document.getElementById('metric-low-stock').textContent = m.lowStockCount;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadInventory() {
+      const search = document.getElementById('inv-search').value;
+      const lowOnly = document.getElementById('inv-low-stock-check').checked;
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      if (lowOnly) params.append('lowStockOnly', 'true');
+
+      try {
+        const res = await fetch('/api/inventory?' + params.toString());
+        const json = await res.json();
+        if (json.success) {
+          partsCache = json.data;
+          const tbody = document.getElementById('inventory-table-body');
+          tbody.innerHTML = json.data.map(p => {
+            const isLow = (p.workshop_qty + p.web_qty) <= p.low_stock_threshold;
+            return `
+              <tr class="${isLow ? 'bg-rose-50/50' : 'hover:bg-slate-50'}">
+                <td class="p-3 font-mono font-bold text-slate-700">${p.sku}</td>
+                <td class="p-3 font-semibold text-slate-900">${p.name}</td>
+                <td class="p-3">Rs. ${p.unit_cost.toLocaleString()} / <span class="font-bold text-indigo-700">Rs. ${p.unit_price.toLocaleString()}</span></td>
+                <td class="p-3 text-center font-bold text-indigo-600">${p.workshop_qty}</td>
+                <td class="p-3 text-center font-bold text-emerald-600">${p.web_qty}</td>
+                <td class="p-3 text-center text-slate-500">${p.reserved_qty}</td>
+                <td class="p-3 text-center font-bold text-slate-600">${p.low_stock_threshold}</td>
+                <td class="p-3 text-center">
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isLow ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">
+                    ${isLow ? 'LOW STOCK' : 'IN STOCK'}
+                  </span>
+                </td>
+                <td class="p-3 text-right">
+                  <button onclick="quickAdjust(${p.id})" class="text-indigo-600 hover:text-indigo-900 font-bold">Adjust</button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadRequisitions() {
+      try {
+        const res = await fetch('/api/requisitions');
+        const json = await res.json();
+        if (json.success) {
+          const tbody = document.getElementById('requisitions-table-body');
+          if (json.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">No requisitions submitted yet.</td></tr>';
+            return;
+          }
+          tbody.innerHTML = json.data.map(r => {
+            const itemsSummary = r.items.map(i => `${i.name} (Qty: ${i.quantity_requested})`).join('<br>');
+            const isPending = r.status === 'Pending';
+            return `
+              <tr class="hover:bg-slate-50">
+                <td class="p-3 font-mono font-bold text-indigo-700">#REQ-${r.id}</td>
+                <td class="p-3">Job #${r.job_card_id} <span class="text-slate-400 text-[10px] block">${r.job_status || ''}</span></td>
+                <td class="p-3 font-medium text-slate-800">${r.mechanic_name}</td>
+                <td class="p-3 text-slate-600">${itemsSummary}</td>
+                <td class="p-3 text-slate-500">${new Date(r.created_at).toLocaleDateString()}</td>
+                <td class="p-3 text-center">
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    r.status === 'Approved/Issued' ? 'bg-emerald-100 text-emerald-700' :
+                    r.status === 'Rejected' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-800'
+                  }">
+                    ${r.status}
+                  </span>
+                </td>
+                <td class="p-3 text-right space-x-2">
+                  ${isPending ? `
+                    <button onclick="approveRequisition(${r.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded text-[11px] font-bold">
+                      Approve & Issue
+                    </button>
+                    <button onclick="rejectRequisition(${r.id})" class="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded text-[11px] font-bold">
+                      Reject
+                    </button>
+                  ` : `<span class="text-slate-400 text-[11px]">Processed</span>`}
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function approveRequisition(id) {
+      if (!confirm(`Confirm approval for Requisition #${id}? Workshop stock will be automatically deducted.`)) return;
+      try {
+        const res = await fetch(`/api/requisitions/${id}/approve`, {
+          method: 'PUT',
+          headers: { 'x-user-id': '1' }
+        });
+        const json = await res.json();
+        if (json.success) {
+          alert('Requisition approved and stock issued successfully!');
+          refreshAll();
+        } else {
+          alert('Approval failed: ' + json.error);
+        }
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    async function rejectRequisition(id) {
+      const reason = prompt('Please enter reason for rejection:');
+      if (!reason) return;
+      try {
+        const res = await fetch(`/api/requisitions/${id}/reject`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'x-user-id': '1' },
+          body: JSON.stringify({ reason })
+        });
+        const json = await res.json();
+        if (json.success) {
+          alert('Requisition rejected.');
+          refreshAll();
+        } else {
+          alert('Error: ' + json.error);
+        }
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    async function loadOrders() {
+      try {
+        const res = await fetch('/api/orders');
+        const json = await res.json();
+        if (json.success) {
+          const tbody = document.getElementById('orders-table-body');
+          if (json.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">No web orders placed yet.</td></tr>';
+            return;
+          }
+          tbody.innerHTML = json.data.map(o => {
+            const items = o.items.map(i => `${i.product_name} x${i.quantity}`).join(', ');
+            let nextAction = '';
+            if (o.status === 'Placed') {
+              nextAction = `<button onclick="updateOrderStatus(${o.id}, 'Packed')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded text-[11px] font-bold">Mark Packed</button>`;
+            } else if (o.status === 'Packed') {
+              nextAction = `<button onclick="updateOrderStatus(${o.id}, 'Dispatched')" class="bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1 rounded text-[11px] font-bold">Dispatch (Sale)</button>`;
+            } else if (o.status === 'Dispatched') {
+              nextAction = `<button onclick="updateOrderStatus(${o.id}, 'Delivered')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded text-[11px] font-bold">Mark Delivered</button>`;
+            } else {
+              nextAction = `<span class="text-slate-400 text-[11px]">${o.status}</span>`;
+            }
+
+            return `
+              <tr class="hover:bg-slate-50">
+                <td class="p-3 font-mono font-bold text-slate-800">${o.order_number}</td>
+                <td class="p-3">${o.customer_name}<span class="block text-[10px] text-slate-400">${o.delivery_address}</span></td>
+                <td class="p-3 text-slate-600 max-w-xs truncate">${items}</td>
+                <td class="p-3 font-bold text-slate-900">Rs. ${o.total_amount.toLocaleString()}</td>
+                <td class="p-3">${o.payment_method}<span class="block text-[10px] font-bold text-emerald-600">${o.payment_status}</span></td>
+                <td class="p-3 text-center">
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    o.status === 'Delivered' ? 'bg-emerald-100 text-emerald-700' :
+                    o.status === 'Dispatched' ? 'bg-sky-100 text-sky-700' :
+                    o.status === 'Packed' ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'
+                  }">
+                    ${o.status}
+                  </span>
+                </td>
+                <td class="p-3 text-right">${nextAction}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function updateOrderStatus(id, status) {
+      try {
+        const res = await fetch(`/api/orders/${id}/status`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'x-user-id': '1' },
+          body: JSON.stringify({ status })
+        });
+        const json = await res.json();
+        if (json.success) {
+          refreshAll();
+        } else {
+          alert('Failed to update status: ' + json.error);
+        }
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    async function loadTransactions() {
+      try {
+        const res = await fetch('/api/inventory/transactions');
+        const json = await res.json();
+        if (json.success) {
+          const tbody = document.getElementById('transactions-table-body');
+          tbody.innerHTML = json.data.map(t => `
+            <tr class="hover:bg-slate-50">
+              <td class="p-3 text-slate-400">#${t.id}</td>
+              <td class="p-3 font-sans font-bold text-slate-800">${t.part_name} <span class="text-slate-400 font-mono text-[10px]">(${t.part_sku})</span></td>
+              <td class="p-3"><span class="px-2 py-0.5 rounded font-sans text-[10px] font-bold ${
+                t.type === 'Purchase' ? 'bg-emerald-100 text-emerald-700' :
+                t.type === 'Reserve' ? 'bg-amber-100 text-amber-700' :
+                t.type === 'Issue' ? 'bg-purple-100 text-purple-700' :
+                t.type === 'Sale' ? 'bg-sky-100 text-sky-700' : 'bg-slate-200 text-slate-800'
+              }">${t.type}</span></td>
+              <td class="p-3 text-center font-bold font-mono text-slate-900">${t.quantity}</td>
+              <td class="p-3 text-slate-600 font-mono text-[11px]">${t.source_stock || '-'} &rarr; ${t.destination_stock || '-'}</td>
+              <td class="p-3 font-sans text-slate-600 text-[11px]">${t.reference_type || ''} ${t.notes ? `(${t.notes})` : ''}</td>
+              <td class="p-3 text-slate-400 text-[10px]">${new Date(t.created_at).toLocaleString()}</td>
+            </tr>
+          `).join('');
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // Modal Helpers
+    function openAdjustModal() {
+      const select = document.getElementById('adj-part-id');
+      select.innerHTML = partsCache.map(p => `<option value="${p.id}">${p.name} (${p.sku}) - Avail: ${p.workshop_qty} WS / ${p.web_qty} Web</option>`).join('');
+      document.getElementById('adjust-modal').classList.remove('hidden');
+    }
+
+    function quickAdjust(partId) {
+      openAdjustModal();
+      document.getElementById('adj-part-id').value = partId;
+    }
+
+    function closeAdjustModal() {
+      document.getElementById('adjust-modal').classList.add('hidden');
+    }
+
+    function updateAdjustFields() {
+      const type = document.getElementById('adj-type').value;
+      if (type === 'Allocation') {
+        document.getElementById('div-source').classList.remove('hidden');
+        document.getElementById('div-dest').classList.remove('hidden');
+      } else {
+        document.getElementById('div-source').classList.add('hidden');
+        document.getElementById('div-dest').classList.remove('hidden');
+      }
+    }
+
+    async function handleAdjustStock(e) {
+      e.preventDefault();
+      const partId = document.getElementById('adj-part-id').value;
+      const adjustmentType = document.getElementById('adj-type').value;
+      const quantity = document.getElementById('adj-qty').value;
+      const sourceStock = document.getElementById('adj-source').value;
+      const destinationStock = document.getElementById('adj-dest').value;
+      const notes = document.getElementById('adj-notes').value;
+
+      try {
+        const res = await fetch('/api/inventory/adjust', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-user-id': '1' },
+          body: JSON.stringify({ partId, adjustmentType, quantity, sourceStock, destinationStock, notes })
+        });
+        const json = await res.json();
+        if (json.success) {
+          alert('Stock adjustment saved.');
+          closeAdjustModal();
+          refreshAll();
+        } else {
+          alert('Adjustment failed: ' + json.error);
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    function openCreatePartModal() {
+      document.getElementById('create-part-modal').classList.remove('hidden');
+    }
+
+    function closeCreatePartModal() {
+      document.getElementById('create-part-modal').classList.add('hidden');
+    }
+
+    async function handleCreatePart(e) {
+      e.preventDefault();
+      const sku = document.getElementById('cp-sku').value;
+      const name = document.getElementById('cp-name').value;
+      const description = document.getElementById('cp-desc').value;
+      const unit_cost = parseFloat(document.getElementById('cp-cost').value);
+      const unit_price = parseFloat(document.getElementById('cp-price').value);
+      const workshop_qty = parseInt(document.getElementById('cp-wqty').value);
+      const web_qty = parseInt(document.getElementById('cp-webqty').value);
+      const low_stock_threshold = parseInt(document.getElementById('cp-thresh').value);
+
+      try {
+        const res = await fetch('/api/inventory', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-user-id': '1' },
+          body: JSON.stringify({
+            sku, name, description, unit_cost, unit_price,
+            workshop_qty, web_qty, low_stock_threshold
+          })
+        });
+        const json = await res.json();
+        if (json.success) {
+          alert('New Part added to inventory catalog!');
+          closeCreatePartModal();
+          refreshAll();
+        } else {
+          alert('Error: ' + json.error);
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    async function openSimulateRequisitionModal() {
+      const part = partsCache[0];
+      if (!part) return alert('No parts available to requisition.');
+
+      const qty = prompt(`Simulate Mechanic Requisition for Job Card #101:\nPart: ${part.name}\nQuantity to request:`, "1");
+      if (!qty || isNaN(qty) || parseInt(qty) <= 0) return;
+
+      try {
+        const res = await fetch('/api/requisitions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-user-id': '2' }, // Mechanic ID 2
+          body: JSON.stringify({
+            jobCardId: 101,
+            items: [{ part_id: part.id, quantity: parseInt(qty) }]
+          })
+        });
+        const json = await res.json();
+        if (json.success) {
+          alert(`Requisition #${json.data.id} submitted by Mechanic!`);
+          refreshAll();
+        } else {
+          alert('Error: ' + json.error);
+        }
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+  </script>
+</body>
+</html>
